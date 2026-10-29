@@ -15,6 +15,16 @@ public final class DBUtil {
     private static final String USER = "root";
     private static final String PASSWORD = "";
 
+    static {
+        // Явне завантаження драйвера: гарантує, що він зареєстрований у DriverManager
+        // і тоді, коли серверна частина працює як WAR-застосунок у Tomcat.
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new ExceptionInInitializerError("JDBC-драйвер MySQL не знайдено: " + e.getMessage());
+        }
+    }
+
     private DBUtil() {
     }
 
