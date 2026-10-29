@@ -1,4 +1,4 @@
-package ua.edu.nupp.kpp.server.model;
+package ua.edu.nupp.kpp.server;
 
 /**
  * Автомобіль клієнта. Відповідає таблиці car.
@@ -6,7 +6,7 @@ package ua.edu.nupp.kpp.server.model;
  */
 public class Car {
 
-    private long id;
+    private Long id;
     private long clientId;
     private String vin;
     private String licensePlate;
@@ -18,7 +18,7 @@ public class Car {
     public Car() {
     }
 
-    public Car(long id, long clientId, String vin, String licensePlate, String brand,
+    public Car(Long id, long clientId, String vin, String licensePlate, String brand,
                String model, int productionYear, int mileageKm) {
         this.id = id;
         this.clientId = clientId;
@@ -30,11 +30,11 @@ public class Car {
         this.mileageKm = mileageKm;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

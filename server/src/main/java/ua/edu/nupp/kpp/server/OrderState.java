@@ -1,9 +1,10 @@
-package ua.edu.nupp.kpp.server.model;
+package ua.edu.nupp.kpp.server;
 
 /**
  * Стани життєвого циклу сервісного замовлення:
  * СТВОРЕНО → ДІАГНОСТОВАНО → РЕМОНТ → ВИКОНАНО.
- * У базі даних зберігається назва константи (CREATED, DIAGNOSED, ...).
+ * У базі даних зберігається назва константи (CREATED, DIAGNOSED, ...),
+ * правила переходів між станами перевіряє Service-рівень.
  */
 public enum OrderState {
 

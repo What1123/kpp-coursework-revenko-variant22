@@ -1,4 +1,4 @@
-package ua.edu.nupp.kpp.server.model;
+package ua.edu.nupp.kpp.server;
 
 import java.time.LocalDate;
 
@@ -7,16 +7,15 @@ import java.time.LocalDate;
  * Відповідає таблиці service_order.
  * Зв'язок: car.id → service_order.car_id (поле carId).
  * <p>
- * Поля f1, f2, f3 та priorityIndex розраховуються на сервері й мають діапазон 0-100:
- * F1 - вплив на безпеку, F2 - вплив на мобільність, F3 - тривалість очікування,
- * priorityIndex = 0,40·F1 + 0,35·F2 + 0,25·F3.
+ * Поля f1, f2, f3 та priorityIndex лише зберігають значення: їх розраховує
+ * Service-рівень (клас PriorityCalculator), діапазон значень 0-100.
  */
 public class ServiceOrder {
 
-    private long id;
+    private Long id;
     private long carId;
     private String description;
-    private OrderState state = OrderState.CREATED;
+    private OrderState state;
     private LocalDate createdDate;
     private double f1;
     private double f2;
@@ -26,7 +25,7 @@ public class ServiceOrder {
     public ServiceOrder() {
     }
 
-    public ServiceOrder(long id, long carId, String description, OrderState state,
+    public ServiceOrder(Long id, long carId, String description, OrderState state,
                         LocalDate createdDate, double f1, double f2, double f3,
                         double priorityIndex) {
         this.id = id;
@@ -40,11 +39,11 @@ public class ServiceOrder {
         this.priorityIndex = priorityIndex;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

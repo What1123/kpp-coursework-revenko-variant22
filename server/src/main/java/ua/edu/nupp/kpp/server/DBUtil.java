@@ -6,7 +6,7 @@ import java.sql.SQLException;
 
 /**
  * Утилітний клас підключення до бази даних MySQL (car_service).
- * Метод {@link #getConnection()} використовується DAO-класами.
+ * Метод {@link #getConnection()} використовується всіма DAO-класами.
  */
 public final class DBUtil {
 
@@ -21,7 +21,4 @@ public final class DBUtil {
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);
     }
-
-
-    }
-
+}

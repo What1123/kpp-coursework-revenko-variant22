@@ -1,4 +1,4 @@
-package ua.edu.nupp.kpp.server.model;
+package ua.edu.nupp.kpp.server;
 
 import java.math.BigDecimal;
 
@@ -11,7 +11,7 @@ import java.math.BigDecimal;
  */
 public class Work {
 
-    private long id;
+    private Long id;
     private long orderId;
     private String name;
     private double safetyScore;
@@ -22,7 +22,7 @@ public class Work {
     public Work() {
     }
 
-    public Work(long id, long orderId, String name, double safetyScore,
+    public Work(Long id, long orderId, String name, double safetyScore,
                 double mobilityScore, double laborHours, BigDecimal cost) {
         this.id = id;
         this.orderId = orderId;
@@ -33,11 +33,11 @@ public class Work {
         this.cost = cost;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

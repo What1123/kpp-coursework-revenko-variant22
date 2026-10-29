@@ -1,12 +1,12 @@
-package ua.edu.nupp.kpp.server.model;
+package ua.edu.nupp.kpp.server;
 
 /**
  * Клієнт сервісу - власник одного або кількох автомобілів.
- * Відповідає таблиці client.
+ * Відповідає таблиці client. Модель лише зберігає дані.
  */
 public class Client {
 
-    private long id;
+    private Long id;
     private String fullName;
     private String phone;
     private String email;
@@ -14,18 +14,18 @@ public class Client {
     public Client() {
     }
 
-    public Client(long id, String fullName, String phone, String email) {
+    public Client(Long id, String fullName, String phone, String email) {
         this.id = id;
         this.fullName = fullName;
         this.phone = phone;
         this.email = email;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
