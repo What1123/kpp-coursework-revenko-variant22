@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+    <display-name>car-service-server</display-name>
+
+    <!-- Клієнти: GET /clients, POST /clients -->
+    <servlet>
+        <servlet-name>ClientServlet</servlet-name>
+        <servlet-class>ua.edu.nupp.kpp.server.ClientServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ClientServlet</servlet-name>
+        <url-pattern>/clients</url-pattern>
+    </servlet-mapping>
+
+    <!-- Автомобілі: GET /cars, POST /cars -->
+    <servlet>
+        <servlet-name>CarServlet</servlet-name>
+        <servlet-class>ua.edu.nupp.kpp.server.CarServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CarServlet</servlet-name>
+        <url-pattern>/cars</url-pattern>
+    </servlet-mapping>
+
+    <!-- Сервісні замовлення (життєвий цикл, F1–F3, індекс пріоритету): GET /orders, POST /orders -->
+    <servlet>
+        <servlet-name>ServiceOrderServlet</servlet-name>
+        <servlet-class>ua.edu.nupp.kpp.server.ServiceOrderServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ServiceOrderServlet</servlet-name>
+        <url-pattern>/orders</url-pattern>
+    </servlet-mapping>
+
+    <!-- Роботи сервісних замовлень: GET /works, POST /works -->
+    <servlet>
+        <servlet-name>WorkServlet</servlet-name>
+        <servlet-class>ua.edu.nupp.kpp.server.WorkServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>WorkServlet</servlet-name>
+        <url-pattern>/works</url-pattern>
+    </servlet-mapping>
+</web-app>
