@@ -10,12 +10,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
@@ -26,8 +28,6 @@ import javafx.stage.Stage;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.logging.Logger;
 
@@ -116,7 +116,7 @@ public class MainApp extends Application {
     }
 
     // ------------------------------------------------------------------------
-    // Вкладка «Автомобілі» (+ початок CSV-імпорту)
+    // Вкладка «Автомобілі» (+ фоновий CSV-імпорт)
     // ------------------------------------------------------------------------
 
     private Pane carPane() {
@@ -140,6 +140,8 @@ public class MainApp extends Application {
 
         TextField csvFile = new TextField(Path.of("sample-data", "cars.csv").toString());
         Button importCsv = new Button("Імпортувати CSV");
+        ProgressBar importProgress = new ProgressBar(0);
+        importProgress.setMaxWidth(Double.MAX_VALUE);
         Label csvStatus = new Label("CSV-імпорт ще не запускався");
         csvStatus.setWrapText(true);
 
@@ -169,15 +171,29 @@ public class MainApp extends Application {
             }
         });
 
-        // Початок CSV-імпорту: файл читається, розбирається, коректні рядки йдуть на сервер.
-        // Фонове виконання (Task) і ProgressBar — наступний етап.
         importCsv.setOnAction(e -> safe(() -> {
-            CarCsvImporter.Result result = new CarCsvImporter(api).importFile(Path.of(csvFile.getText().trim()));
-            csvStatus.setText(result.summary());
-            refreshCars();
-            if (!result.getMessages().isEmpty()) {
-                showInfo(String.join("\n", limit(result.getMessages(), 12)));
-            }
+            ImportCarsTask task = new ImportCarsTask(Path.of(csvFile.getText().trim()), api);
+            importProgress.progressProperty().bind(task.progressProperty());
+            csvStatus.textProperty().bind(task.messageProperty());
+            importCsv.disableProperty().bind(task.runningProperty());
+            task.setOnSucceeded(ev -> {
+                csvStatus.textProperty().unbind();
+                CarCsvImporter.Result result = task.getValue();
+                csvStatus.setText("Готово. " + result.summary());
+                refreshCars();
+                showImportReport(result);
+            });
+            task.setOnFailed(ev -> {
+                csvStatus.textProperty().unbind();
+                importProgress.progressProperty().unbind();
+                importProgress.setProgress(0);
+                csvStatus.setText("Імпорт перервано через помилку");
+                LOG.warning(String.valueOf(task.getException().getMessage()));
+                showError(task.getException());
+            });
+            Thread worker = new Thread(task, "csv-import");
+            worker.setDaemon(true);
+            worker.start();
         }));
 
         return layout(cars, form(
@@ -189,7 +205,7 @@ public class MainApp extends Application {
                 new Label("Рік випуску"), year,
                 new Label("Пробіг, км"), mileage,
                 new HBox(8, add, update, delete, refresh),
-                new Label("Файл CSV (відносний шлях)"), csvFile, importCsv, csvStatus));
+                new Label("Файл CSV (відносний шлях)"), csvFile, importCsv, importProgress, csvStatus));
     }
 
     private Car readCar(Long id, TextField clientId, TextField vin, TextField plate, TextField brand,
@@ -383,20 +399,28 @@ public class MainApp extends Application {
 
     private void showError(Throwable e) {
         String text = e == null || e.getMessage() == null ? "Помилка" : e.getMessage();
-        new Alert(Alert.AlertType.ERROR, text, ButtonType.OK).showAndWait();
+        showText(Alert.AlertType.ERROR, "Помилка", text);
     }
 
-    private void showInfo(String text) {
-        new Alert(Alert.AlertType.INFORMATION, text, ButtonType.OK).showAndWait();
-    }
-
-    private static List<String> limit(List<String> messages, int max) {
-        if (messages.size() <= max) {
-            return messages;
+    private void showImportReport(CarCsvImporter.Result result) {
+        StringBuilder text = new StringBuilder(result.summary());
+        for (String message : result.getMessages()) {
+            text.append('\n').append(message);
         }
-        List<String> shortList = new ArrayList<>(messages.subList(0, max));
-        shortList.add("... та ще " + (messages.size() - max));
-        return shortList;
+        showText(Alert.AlertType.INFORMATION, "Підсумок CSV-імпорту", text.toString());
+    }
+
+    private void showText(Alert.AlertType type, String title, String text) {
+        Alert alert = new Alert(type, "", ButtonType.OK);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        TextArea area = new TextArea(text);
+        area.setEditable(false);
+        area.setWrapText(true);
+        area.setPrefColumnCount(60);
+        area.setPrefRowCount(Math.min(14, Math.max(3, text.split("\n", -1).length + 1)));
+        alert.getDialogPane().setContent(area);
+        alert.showAndWait();
     }
 
     private static VBox form(Node... children) {

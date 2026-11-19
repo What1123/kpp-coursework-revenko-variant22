@@ -8,11 +8,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Початок CSV-імпорту (етап 3): читання файла з автомобілями, розбір рядків і передавання
- * коректних записів серверу через HttpCarServiceClient.
+ * CSV-імпорт автомобілів: читання файла, розбір рядків і передавання коректних записів
+ * серверу через HttpCarServiceClient.
  * <p>
  * Формат файла sample-data/cars.csv (UTF-8, роздільник «;», перший рядок — заголовок):
  * <pre>
@@ -23,7 +24,7 @@ import java.util.logging.Logger;
  * Предметні правила (формат VIN, межі року, існування клієнта, унікальність VIN і номера)
  * перевіряє Service на сервері; рядки, які він відхилив, враховуються у підсумку.
  * <p>
- * Фоновий запуск через JavaFX Task, ProgressBar і остаточна обробка помилок — етап 4.
+ * Фоновий запуск через JavaFX Task і ProgressBar виконує клас ImportCarsTask.
  */
 public class CarCsvImporter {
 
@@ -33,12 +34,22 @@ public class CarCsvImporter {
     public static final List<String> HEADER = List.of(
             "client_id", "vin", "license_plate", "brand", "model", "production_year", "mileage_km");
 
+    @FunctionalInterface
+    public interface ProgressListener {
+        void update(int processed, int total);
+    }
+
     /** Підсумок імпорту. */
     public static class Result {
+        private int total;
         private int imported;
         private int skipped;
         private int rejected;
         private final List<String> messages = new ArrayList<>();
+
+        public int getTotal() {
+            return total;
+        }
 
         /** Кількість записів, які сервер прийняв. */
         public int getImported() {
@@ -61,6 +72,9 @@ public class CarCsvImporter {
         }
 
         public String summary() {
+            if (total == 0) {
+                return "Немає рядків для імпорту";
+            }
             return "Імпортовано: " + imported + "; пропущено (неправильний формат): " + skipped
                     + "; відхилено сервером: " + rejected;
         }
@@ -79,36 +93,75 @@ public class CarCsvImporter {
      * @throws IllegalArgumentException файл не знайдено, не в UTF-8 або заголовок неправильний
      */
     public Result importFile(Path file) {
-        List<String> lines = readLines(file);
-        checkHeader(lines.get(0));
+        return importFile(file, (processed, total) -> { });
+    }
 
-        Result result = new Result();
+    public Result importFile(Path file, ProgressListener listener) {
+        List<String> lines;
+        try {
+            lines = readLines(file);
+            checkHeader(lines.get(0));
+        } catch (IllegalArgumentException e) {
+            LOG.warning("Імпорт не розпочато: " + e.getMessage());
+            throw e;
+        }
+
+        int total = 0;
         for (int i = 1; i < lines.size(); i++) {
-            String line = lines.get(i);
-            if (line.isBlank()) {
-                continue;
-            }
-            int lineNo = i + 1;
-            Car car;
-            try {
-                car = parseLine(line);
-            } catch (IllegalArgumentException e) {
-                result.skipped++;
-                note(result, "Рядок " + lineNo + " пропущено: " + e.getMessage());
-                continue;
-            }
-            try {
-                api.addCar(car);
-                result.imported++;
-            } catch (ApiException e) {
-                if (e.getStatus() == 0 || e.getStatus() >= 500) {
-                    throw e;                       // сервер недоступний або зламаний — імпорт зупиняється
-                }
-                result.rejected++;
-                note(result, "Рядок " + lineNo + " відхилено сервером: " + e.getMessage());
+            if (!lines.get(i).isBlank()) {
+                total++;
             }
         }
+
+        Result result = new Result();
+        result.total = total;
+        LOG.info("Початок імпорту CSV: файл " + file.getFileName() + ", рядків даних: " + total);
+        if (total == 0) {
+            LOG.info("Імпорт завершено: у файлі немає рядків даних");
+            listener.update(0, 0);
+            return result;
+        }
+
+        int processed = 0;
+        listener.update(processed, total);
+        try {
+            for (int i = 1; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (line.isBlank()) {
+                    continue;
+                }
+                handleLine(result, line, i + 1);
+                processed++;
+                listener.update(processed, total);
+            }
+        } catch (ApiException e) {
+            LOG.log(Level.SEVERE, "Імпорт перервано: оброблено " + processed + " з " + total
+                    + " рядків, імпортовано " + result.imported + ". Причина: " + e.getMessage());
+            throw e;
+        }
+        LOG.info("Імпорт завершено. " + result.summary());
         return result;
+    }
+
+    private void handleLine(Result result, String line, int lineNo) {
+        Car car;
+        try {
+            car = parseLine(line);
+        } catch (IllegalArgumentException e) {
+            result.skipped++;
+            note(result, "Рядок " + lineNo + " пропущено: " + e.getMessage());
+            return;
+        }
+        try {
+            api.addCar(car);
+            result.imported++;
+        } catch (ApiException e) {
+            if (e.getStatus() == 0 || e.getStatus() >= 500) {
+                throw e;
+            }
+            result.rejected++;
+            note(result, "Рядок " + lineNo + " відхилено сервером: " + e.getMessage());
+        }
     }
 
     /**
