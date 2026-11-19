@@ -1,8 +1,30 @@
+# Результати складання Maven
 target/
 **/target/
+*.war
+*.jar
+*.class
+
+# Журнали
+*.log
+logs/
+
+# Локальні налаштування IDE
 .idea/
 *.iml
 out/
-*.log
+.vscode/
+.project
+.classpath
+.settings/
+nbproject/
+
+# Службові файли ОС
+.DS_Store
+Thumbs.db
+
+# Паролі, токени та локальні налаштування
 .env
+*.env
 application-local.properties
+secrets.properties
